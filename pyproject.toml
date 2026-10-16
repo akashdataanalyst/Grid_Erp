@@ -1,0 +1,20 @@
+[project]
+name = "grid_erp"
+authors = [
+    {name = "Calco PolyTechnik Pvt Ltd", email = "mis.1@calco.in"}
+]
+description = "Calco PolyTechnik Manufacturing ERP - Branding, WhatsApp, Recruitment Assessment and AI Assistant"
+requires-python = ">=3.10"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = [
+    # Grid AI: only used by the Claude provider; other providers use plain HTTP via `requests` (bundled with Frappe).
+    "anthropic",
+]
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.module]
+name = "grid_erp"
