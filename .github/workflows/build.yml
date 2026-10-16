@@ -1,21 +1,18 @@
 # =====================================================================
-#  BUILD IMAGE: Frappe + ERPNext + HRMS + Custom Apps
-#  Image: ghcr.io/akashdataanalyst/grid-erp:latest
-#
-#  PRIVATE repo ho to ek baar:
-#    Repo > Settings > Secrets and variables > Actions > New secret
-#    Name: GH_PAT   Value: (GitHub token, "repo" tick)
+#  BUILD IMAGE: Frappe + ERPNext + HRMS + Grid ERP
+#  Repo:  akashdataanalyst/Grid_Erp (public, branch: main)
+#  Image: ghcr.io/akashdataanalyst/grid-erp-v2:latest
 # =====================================================================
 
 name: Build Image
 
 on:
   push:
-    branches: [ main ]   # is branch par push hone par build
-  workflow_dispatch:                  # Actions tab se manual run
+    branches: [ main ]       # main par push hone par build
+  workflow_dispatch:         # Actions tab se manual run
 
 env:
-  IMAGE: ghcr.io/akashdataanalyst/grid-erp
+  IMAGE: ghcr.io/akashdataanalyst/grid-erp-v2
   APP_BRANCH: main
   FRAPPE_VERSION: version-16
 
@@ -34,18 +31,16 @@ jobs:
           repository: frappe/frappe_docker
 
       # STEP 2: apps.json = image mein kaunsi apps jaayengi
-      #   grid_interview add karni ho to aakhri line ke baad comma lagao
-      #   aur ye line jodo (REPO aur BRANCH apne hisaab se):
-      #   {"url": "https://${{ secrets.GH_PAT }}@github.com/akashdataanalyst/REPO", "branch": "BRANCH"}
       - name: apps.json banao
         run: |
           cat > apps.json <<EOF
           [
             {"url": "https://github.com/frappe/erpnext", "branch": "${{ env.FRAPPE_VERSION }}"},
             {"url": "https://github.com/frappe/hrms", "branch": "${{ env.FRAPPE_VERSION }}"},
-            {"url": "https://${{ secrets.GH_PAT }}@github.com/akashdataanalyst/Grid_Erp", "branch": "${{ env.APP_BRANCH }}"}
+            {"url": "https://github.com/akashdataanalyst/Grid_Erp", "branch": "${{ env.APP_BRANCH }}"}
           ]
           EOF
+          cat apps.json
           jq empty apps.json && echo "apps.json OK"
 
       # STEP 3: Docker build tool
