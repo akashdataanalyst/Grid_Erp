@@ -1,0 +1,80 @@
+# =====================================================================
+#  BUILD IMAGE: Frappe + ERPNext + HRMS + Custom Apps
+#  Image: ghcr.io/akashdataanalyst/grid-erp:latest
+#
+#  PRIVATE repo ho to ek baar:
+#    Repo > Settings > Secrets and variables > Actions > New secret
+#    Name: GH_PAT   Value: (GitHub token, "repo" tick)
+# =====================================================================
+
+name: Build Image
+
+on:
+  push:
+    branches: [ main ]   # is branch par push hone par build
+  workflow_dispatch:                  # Actions tab se manual run
+
+env:
+  IMAGE: ghcr.io/akashdataanalyst/grid-erp
+  APP_BRANCH: main
+  FRAPPE_VERSION: version-16
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # STEP 1: frappe_docker download (isme Containerfile hai)
+      - name: frappe_docker lao
+        uses: actions/checkout@v4
+        with:
+          repository: frappe/frappe_docker
+
+      # STEP 2: apps.json = image mein kaunsi apps jaayengi
+      #   grid_interview add karni ho to aakhri line ke baad comma lagao
+      #   aur ye line jodo (REPO aur BRANCH apne hisaab se):
+      #   {"url": "https://${{ secrets.GH_PAT }}@github.com/akashdataanalyst/REPO", "branch": "BRANCH"}
+      - name: apps.json banao
+        run: |
+          cat > apps.json <<EOF
+          [
+            {"url": "https://github.com/frappe/erpnext", "branch": "${{ env.FRAPPE_VERSION }}"},
+            {"url": "https://github.com/frappe/hrms", "branch": "${{ env.FRAPPE_VERSION }}"},
+            {"url": "https://${{ secrets.GH_PAT }}@github.com/akashdataanalyst/Grid_Erp", "branch": "${{ env.APP_BRANCH }}"}
+          ]
+          EOF
+          jq empty apps.json && echo "apps.json OK"
+
+      # STEP 3: Docker build tool
+      - name: Docker Buildx setup
+        uses: docker/setup-buildx-action@v3
+
+      # STEP 4: GHCR login
+      - name: GHCR login
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # STEP 5: Image build + push
+      #   apps.json "secret" ke roop mein jaati hai (naya frappe_docker tareeka)
+      #   CACHE_BUST = commit SHA, taaki har push par naya code aaye
+      - name: Image build + push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: images/layered/Containerfile
+          push: true
+          secret-files: |
+            apps_json=apps.json
+          build-args: |
+            FRAPPE_PATH=https://github.com/frappe/frappe
+            FRAPPE_BRANCH=${{ env.FRAPPE_VERSION }}
+            CACHE_BUST=${{ github.sha }}
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
