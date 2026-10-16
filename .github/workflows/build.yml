@@ -73,3 +73,45 @@ jobs:
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ github.sha }}
+
+
+# ===================================================================
+  # JOB 2: EC2 PAR DEPLOY (build pass hone ke baad hi)
+  # ===================================================================
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: EC2 par deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 30m
+          script: |
+            set -e
+            cd ~/frappe_docker
+            P="docker compose -p griderp -f compose.custom.yaml"
+
+            echo ">> 1. Backup"
+            $P exec -T backend bench --site griderp.in backup
+
+            echo ">> 2. Nayi image pull"
+            $P pull
+
+            echo ">> 3. Containers restart (naye code ke saath)"
+            $P up -d
+
+            echo ">> 4. Migrate (naye doctypes/fields database mein)"
+            $P exec -T backend bench --site griderp.in migrate
+
+            echo ">> 5. Cache clear"
+            $P exec -T backend bench --site griderp.in clear-cache
+
+            echo ">> 6. Purani images saaf"
+            docker image prune -f
+
+            echo ">> Deploy done ✅"
+            
