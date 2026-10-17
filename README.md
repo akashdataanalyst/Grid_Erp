@@ -222,4 +222,3 @@ After editing `public/js/recruitment_assessment/proctoring.js` or its CSS, bump 
 
 
 
-## test Akash
