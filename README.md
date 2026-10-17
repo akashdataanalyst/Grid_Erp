@@ -221,4 +221,3 @@ After editing `public/js/recruitment_assessment/proctoring.js` or its CSS, bump 
 1.3.0 (desk navigation for Frappe 16.51; Drive removed from the image)
 
 
-#test
